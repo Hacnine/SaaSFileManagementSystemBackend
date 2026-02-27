@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum FileType {
+  IMAGE
+  VIDEO
+  PDF
+  AUDIO
+}
+
+model User {
+  id                  String    @id @default(uuid())
+  email               String    @unique
+  password            String
+  firstName           String
+  lastName            String
+  role                Role      @default(USER)
+  isEmailVerified     Boolean   @default(false)
+  emailVerifyToken    String?
+  emailVerifyExpires  DateTime?
+  resetPasswordToken  String?
+  resetPasswordExpires DateTime?
+  refreshToken        String?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+
+  activePackageId     String?
+  activePackage       SubscriptionPackage? @relation("ActiveSubscription", fields: [activePackageId], references: [id])
+
+  subscriptionHistory SubscriptionHistory[]
+  folders             Folder[]
+  files               File[]
+
+  @@map("users")
+}
+
+model SubscriptionPackage {
+  id              String     @id @default(uuid())
+  name            String     @unique
+  maxFolders      Int
+  maxNestingLevel Int
+  allowedFileTypes FileType[]
+  maxFileSize     Int        // in MB
+  totalFileLimit  Int
+  filesPerFolder  Int
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  activeUsers     User[]     @relation("ActiveSubscription")
+  subscriptionHistory SubscriptionHistory[]
+
+  @@map("subscription_packages")
+}
+
+model SubscriptionHistory {
+  id          String   @id @default(uuid())
+  userId      String
+  packageId   String
+  startDate   DateTime @default(now())
+  endDate     DateTime?
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  package     SubscriptionPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@map("subscription_history")
+}
+
+model Folder {
+  id          String   @id @default(uuid())
+  name        String
+  userId      String
+  parentId    String?
+  nestingLevel Int     @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent      Folder?  @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Folder[] @relation("FolderHierarchy")
+  files       File[]
+
+  @@map("folders")
+}
+
+model File {
+  id          String   @id @default(uuid())
+  name        String
+  originalName String
+  mimeType    String
+  size        Int      // in bytes
+  path        String
+  fileType    FileType
+  userId      String
+  folderId    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folder      Folder   @relation(fields: [folderId], references: [id], onDelete: Cascade)
+
+  @@map("files")
+}
