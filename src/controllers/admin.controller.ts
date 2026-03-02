@@ -1,15 +1,22 @@
 import { Request, Response, NextFunction } from "express";
-import bcrypt from "bcryptjs";
 import prisma from "../config/database";
 import { AppError } from "../middleware/errorHandler";
 import { AuthRequest } from "../middleware/auth";
-import {
-  generateAccessToken,
-  generateRefreshToken,
-  verifyRefreshToken,
-} from "../utils/jwt";
-import { generateToken, hashToken } from "../utils/crypto";
-import { sendVerificationEmail, sendPasswordResetEmail } from "../utils/email";
+
+// Public endpoint – no auth required
+export const getPublicPackages = async (
+  _req: Request,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const packages = await prisma.subscriptionPackage.findMany();
+    res.json(packages);
+  } catch (error) {
+    next(new AppError("Failed to retrieve packages", 500));
+  }
+};
+
 
 export const createPackage = async (
   req: AuthRequest,
