@@ -2,6 +2,12 @@ import { Response, NextFunction } from "express";
 import prisma from "../config/database";
 import { AppError } from "../middleware/errorHandler";
 import { AuthRequest } from "../middleware/auth";
+import {
+  validateFolderCreation,
+  validateFileUpload,
+  calculateNestingLevel,
+  getSubscriptionInfo,
+} from "../utils/subscriptionEnforcer";
 
 export const subscribePackage = async (
   req: AuthRequest,
@@ -15,12 +21,29 @@ export const subscribePackage = async (
     if (!packageId) {
       throw new AppError("Package ID is required", 400);
     }
+
+    // ensure the package exists
     const subscriptionPackage = await prisma.subscriptionPackage.findUnique({
       where: { id: packageId },
     });
     if (!subscriptionPackage) {
       throw new AppError("Subscription package not found", 404);
     }
+
+    // make sure user does not already have an active package
+    const userRecord = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { activePackageId: true },
+    });
+    if (userRecord?.activePackageId) {
+      return next(
+        new AppError(
+          "You already have an active subscription. Cancel it before subscribing to a new plan.",
+          400,
+        ),
+      );
+    }
+
     await prisma.user.update({
       where: { id: userId },
       data: {
@@ -85,10 +108,15 @@ export const createFolder = async (
     if (!name) {
       throw new AppError("Folder name is required", 400);
     }
+
+    // Validate subscription limits
+    await validateFolderCreation(userId);
+
     const newFolder = await prisma.folder.create({
       data: {
         name,
         userId,
+        nestingLevel: 1,
       },
     });
     res.status(201).json({ folder: newFolder });
@@ -109,6 +137,7 @@ export const createSubFolder = async (
     if (!name) {
       throw new AppError("Folder name is required", 400);
     }
+    
     if (parentId) {
       const parent = await prisma.folder.findUnique({
         where: { id: parentId },
@@ -120,11 +149,17 @@ export const createSubFolder = async (
       }
     }
 
+    // Validate subscription limits (including nesting level)
+    await validateFolderCreation(userId, parentId);
+
+    const nestingLevel = await calculateNestingLevel(parentId);
+
     const newFolder = await prisma.folder.create({
       data: {
         name,
         parentId,
         userId,
+        nestingLevel,
       },
     });
     res.status(201).json({ folder: newFolder });
@@ -267,18 +302,13 @@ export const uploadFile = async (
       return next(new AppError("Folder not found or not owned by user", 404));
     }
 
-    // Map mime type to FileType enum
-    let fileType: "IMAGE" | "VIDEO" | "PDF" | "AUDIO";
-    const mime = file.mimetype || "";
-    if (mime.startsWith("image/")) fileType = "IMAGE";
-    else if (mime.startsWith("video/")) fileType = "VIDEO";
-    else if (mime.startsWith("audio/")) fileType = "AUDIO";
-    else if (
-      mime === "application/pdf" ||
-      (file.originalname && file.originalname.toLowerCase().endsWith(".pdf"))
-    )
-      fileType = "PDF";
-    else return next(new AppError("Unsupported file type", 400));
+    // Validate subscription limits
+    const { fileType } = await validateFileUpload(
+      userId,
+      file.size,
+      file.mimetype || "",
+      folderId
+    );
 
     const created = await prisma.file.create({
       data: {
@@ -413,6 +443,31 @@ export const deleteFile = async (
     }
 
     res.status(200).json({ message: "File deleted successfully" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getSubscriptionStatus = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  if (!req.user) return next(new AppError("Unauthorized", 401));
+  const userId = req.user.id;
+  try {
+    const info = await getSubscriptionInfo(userId);
+    if (!info) {
+      return res.status(200).json({
+        hasActivePackage: false,
+        message: "No active subscription package",
+      });
+    }
+
+    res.status(200).json({
+      hasActivePackage: true,
+      ...info,
+    });
   } catch (error) {
     next(error);
   }

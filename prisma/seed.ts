@@ -8,6 +8,10 @@ async function main() {
   // Create default admin
   const adminEmail = "admin@saasfilemanager.com";
   const adminPassword = "Admin@123";
+  const user1Email = "user1@saasfilemanager.com";
+  const user1Password = "User1@123";
+  const user2Email = "user2@saasfilemanager.com";
+  const user2Password = "User2@123";
 
   const existingAdmin = await prisma.user.findUnique({
     where: { email: adminEmail },
@@ -24,6 +28,27 @@ async function main() {
         firstName: "System",
         lastName: "Admin",
         role: "ADMIN",
+        isEmailVerified: true,
+      },
+    });
+
+    await prisma.user.create({
+      data: {
+        email: user1Email,
+        password: user1Password,
+        firstName: "User",
+        lastName: "One",
+        role: "USER",
+        isEmailVerified: true,
+      },
+    });
+    await prisma.user.create({
+      data: {
+        email: user2Email,
+        password: user2Password,
+        firstName: "User",
+        lastName: "Two",
+        role: "USER",
         isEmailVerified: true,
       },
     });

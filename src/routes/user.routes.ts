@@ -5,6 +5,7 @@ import {
   subscribePackage,
   unsubscribePackage,
   getSubscriptionHistory,
+  getSubscriptionStatus,
   createFolder,
   createSubFolder,
   getFolders,
@@ -32,12 +33,13 @@ const upload = multer({ storage });
 
 const router = Router();
 
-// ── Subscription ────────────────────────────────────────────────────────────
+// ── Subscription 
 router.post("/subscribe", authenticate, subscribePackage);
 router.post("/unsubscribe", authenticate, unsubscribePackage);
 router.get("/subscription-history", authenticate, getSubscriptionHistory);
+router.get("/subscription-status", authenticate, getSubscriptionStatus);
 
-// ── Folders ─────────────────────────────────────────────────────────────────
+// ── Folders ─────
 router.post("/folders", authenticate, createFolder);
 router.post("/folders/sub", authenticate, createSubFolder);
 router.get("/folders", authenticate, getFolders);
@@ -45,7 +47,7 @@ router.delete("/folders/:id", authenticate, deleteFolder);
 router.patch("/folders/:id/rename", authenticate, renameFolder);
 router.patch("/folders/:id/move", authenticate, moveFolder);
 
-// ── Files ───────────────────────────────────────────────────────────────────
+// ── Files ───────
 router.post("/files/upload", authenticate, upload.single("file"), uploadFile);
 router.get("/files/folder/:folderId", authenticate, getFilesByFolder);
 router.patch("/files/:id/rename", authenticate, renameFile);
