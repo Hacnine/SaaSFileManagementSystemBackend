@@ -25,7 +25,7 @@ model User {
   firstName            String
   lastName             String
   role                 Role      @default(USER)
-  isEmailVerified      Boolean   @default(true)
+  isEmailVerified      Boolean   @default(false)
   emailVerifyToken     String?
   emailVerifyExpires   DateTime?
   resetPasswordToken   String?
