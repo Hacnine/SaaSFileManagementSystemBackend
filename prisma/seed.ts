@@ -2,10 +2,10 @@ import bcrypt from "bcryptjs";
 
 import prisma from "../src/config/database";
 
-async function main() {
-  console.log("Seeding database...");
+export async function seedDatabase() {
+  console.log("Running database seeder...");
 
-  // Create default admin
+  // default credentials
   const adminEmail = "admin@saasfilemanager.com";
   const adminPassword = "Admin@123";
   const user1Email = "user1@saasfilemanager.com";
@@ -13,11 +13,14 @@ async function main() {
   const user2Email = "user2@saasfilemanager.com";
   const user2Password = "User2@123";
 
+  // Create default admin & two users only if ADMIN doesn't already exist
   const existingAdmin = await prisma.user.findUnique({
     where: { email: adminEmail },
   });
 
   if (!existingAdmin) {
+    console.log("No admin user found; creating default accounts...");
+
     const salt = await bcrypt.genSalt(12);
     const hashedPassword = await bcrypt.hash(adminPassword, salt);
 
@@ -57,7 +60,7 @@ async function main() {
     console.log(`  Email: ${adminEmail}`);
     console.log(`  Password: ${adminPassword}`);
   } else {
-    console.log("Default admin already exists.");
+    console.log("Admin user already exists; skipping user creation.");
   }
 
   // Create default subscription packages
@@ -116,11 +119,14 @@ async function main() {
   console.log("Seeding complete!");
 }
 
-main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+// if the script is run directly (npm run prisma:seed) execute it
+if (require.main === module) {
+  seedDatabase()
+    .catch((e) => {
+      console.error(e);
+      process.exit(1);
+    })
+    .finally(async () => {
+      await prisma.$disconnect();
+    });
+}

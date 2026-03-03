@@ -10,6 +10,15 @@ export interface SubscriptionLimits {
   filesPerFolder: number;
 }
 
+// simple helper to determine if a user is an admin
+const isAdminUser = async (userId: string): Promise<boolean> => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true },
+  });
+  return user?.role === "ADMIN";
+};
+
 /**
  * Get user's active subscription limits
  */
@@ -46,6 +55,11 @@ export const validateFolderCreation = async (
   userId: string,
   parentFolderId?: string
 ): Promise<void> => {
+  // admins bypass all restrictions
+  if (await isAdminUser(userId)) {
+    return;
+  }
+
   const limits = await getUserSubscriptionLimits(userId);
 
   if (!limits) {
@@ -99,6 +113,22 @@ export const validateFileUpload = async (
 ): Promise<{
   fileType: "IMAGE" | "VIDEO" | "PDF" | "AUDIO";
 }> => {
+  // admins are free to upload; only worry about file type validity
+  if (await isAdminUser(userId)) {
+    let fileType: "IMAGE" | "VIDEO" | "PDF" | "AUDIO";
+    if (mimeType.startsWith("image/")) fileType = "IMAGE";
+    else if (mimeType.startsWith("video/")) fileType = "VIDEO";
+    else if (mimeType.startsWith("audio/")) fileType = "AUDIO";
+    else if (mimeType === "application/pdf") fileType = "PDF";
+    else {
+      throw new AppError(
+        "Unsupported file type. Allowed types depend on your subscription.",
+        400
+      );
+    }
+    return { fileType };
+  }
+
   const limits = await getUserSubscriptionLimits(userId);
 
   if (!limits) {

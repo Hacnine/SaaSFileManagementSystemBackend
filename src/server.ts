@@ -8,6 +8,11 @@ const startServer = async () => {
     await prisma.$connect();
     console.log("Database connected successfully");
 
+    if (process.env.NODE_ENV !== "production") {
+      const { seedDatabase } = await import("../prisma/seed");
+      await seedDatabase();
+    }
+
     app.listen(env.PORT, () => {
       console.log(`Server running on port ${env.PORT}`);
       console.log(`Environment: ${env.NODE_ENV}`);
