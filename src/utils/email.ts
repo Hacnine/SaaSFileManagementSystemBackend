@@ -18,14 +18,14 @@ export const sendVerificationEmail = async (
   const verificationUrl = `${env.FRONTEND_URL}/verify-email?token=${token}`;
 
   await transporter.sendMail({
-    from: `"SaaS File Manager" <${env.SMTP_USER}>`,
+    from: '"SaaS File Manager" <hacninetusar@gmail.com>',
     to: email,
     subject: "Verify Your Email Address",
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #333;">Email Verification</h2>
         <p>Thank you for registering! Please verify your email address by clicking the button below:</p>
-        <a href="${verificationUrl}" 
+        <a href="${verificationUrl}"
            style="display: inline-block; padding: 12px 24px; background-color: #4F46E5; color: white; text-decoration: none; border-radius: 6px; margin: 16px 0;">
           Verify Email
         </a>
@@ -43,14 +43,14 @@ export const sendPasswordResetEmail = async (
   const resetUrl = `${env.FRONTEND_URL}/reset-password?token=${token}`;
 
   await transporter.sendMail({
-    from: `"SaaS File Manager" <${env.SMTP_USER}>`,
+    from: '"SaaS File Manager" <hacninetusar@gmail.com>',
     to: email,
     subject: "Reset Your Password",
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #333;">Password Reset</h2>
         <p>You requested a password reset. Click the button below to set a new password:</p>
-        <a href="${resetUrl}" 
+        <a href="${resetUrl}"
            style="display: inline-block; padding: 12px 24px; background-color: #4F46E5; color: white; text-decoration: none; border-radius: 6px; margin: 16px 0;">
           Reset Password
         </a>
@@ -60,3 +60,5 @@ export const sendPasswordResetEmail = async (
     `,
   });
 };
+
+
