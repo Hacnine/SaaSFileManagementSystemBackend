@@ -8,8 +8,12 @@ const startServer = async () => {
     await prisma.$connect();
     console.log("Database connected successfully");
 
-    const { seedDatabase } = await import("./seed");
-    await seedDatabase();
+    try {
+      const { seedDatabase } = await import("./seed");
+      await seedDatabase();
+    } catch (seedError) {
+      console.error("Seeding failed (non-fatal):", seedError);
+    }
 
     app.listen(env.PORT, () => {
       console.log(`Server running on port ${env.PORT}`);
