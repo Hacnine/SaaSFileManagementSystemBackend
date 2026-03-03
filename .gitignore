@@ -3,7 +3,7 @@ node_modules/
 
 # Env files
 .env
-.env.production
+
 
 # Build output
 dist/
